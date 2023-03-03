@@ -35,16 +35,27 @@ export class Image extends Model<InferAttributes<Image>, InferCreationAttributes
 }
 
 export class Course extends Model<InferAttributes<Course>, InferCreationAttributes<Course>> {
+	declare id: string
 	declare courseNumber: string
 	declare classCode: string
 	declare semester: number
-	declare teacher: string
+	declare teacher: string // this not support yet, need crawler to get courses data
 
 	declare histogram: NonAttribute<Image[]>
 	// these will not exist until `Model.init` was called.
 	declare getHistogram: HasOneGetAssociationMixin<Image> // Note the null assertions!
 	declare setHistogram: HasOneSetAssociationMixin<Image, string>
 	declare createHistogram: HasOneCreateAssociationMixin<Image>
+
+	static buildFromInfo(info: Pick<Course, 'courseNumber' | 'classCode' | 'semester'>){
+		return Course.build({
+			id: [info.semester, info.courseNumber, info.classCode].join('-'),
+			courseNumber: info.courseNumber,
+			classCode: info.classCode,
+			semester: info.semester,
+			teacher: '', 
+		})
+	}
 }
 
 export class User extends Model<
@@ -88,10 +99,11 @@ export default function initColletions(sequelize: Sequelize) {
 	// TODO: 操行、體育等可能重複的科目會出錯
 	Course.init(
 		{
-			courseNumber: {
+			id: {
 				type: DataTypes.STRING,
 				primaryKey: true,
 			},
+			courseNumber: DataTypes.STRING,
 			classCode: DataTypes.STRING,
 			semester: DataTypes.INTEGER,
 			teacher: DataTypes.STRING,

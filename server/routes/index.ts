@@ -16,20 +16,12 @@ async function saveFile(file: fileUpload.UploadedFile, name: string) {
 	)
 }
 
-type CourseInfo = {
-	semester: number
-	courseNumber: string
-	classCode: string
-}
+type CourseInfo = Pick<Course, 'courseNumber' | 'classCode' | 'semester'>
 function createCourse(courseInfo: CourseInfo) {
 	return async (image: Image) => {
-		return Course.create({
-			...courseInfo,
-			teacher: '',
-		}).then(course => {
-			course.setHistogram(image)
-			return course
-		})
+		let course = Course.buildFromInfo(courseInfo)
+		course.setHistogram(image)
+		return course.save()
 	}
 }
 
