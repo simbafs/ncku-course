@@ -20,32 +20,44 @@ import {
 	HasOneCreateAssociationMixin,
 } from 'sequelize'
 
+function generateToken(len = 6) {
+	let char = '0123456789'.split('')
+	let token = ''
+	for (let i = 0; i < len; i++) {
+		token += char[Math.floor(Math.random() * char.length)]
+	}
+	return token
+}
+
 export class Image extends Model<InferAttributes<Image>, InferCreationAttributes<Image>> {
 	declare path: string
 	declare md5: string
 }
 
 export class Course extends Model<InferAttributes<Course>, InferCreationAttributes<Course>> {
-	declare number: string
+	declare courseNumber: string
 	declare classCode: string
-	declare year: number
 	declare semester: number
-	// declare histogram: string
 	declare teacher: string
 
-	declare images: NonAttribute<Image[]>
+	declare histogram: NonAttribute<Image[]>
 	// these will not exist until `Model.init` was called.
-	declare getImage: HasOneGetAssociationMixin<Image> // Note the null assertions!
-	declare setImage: HasOneSetAssociationMixin<Image, string>
-	declare createImage: HasOneCreateAssociationMixin<Image>
+	declare getHistogram: HasOneGetAssociationMixin<Image> // Note the null assertions!
+	declare setHistogram: HasOneSetAssociationMixin<Image, string>
+	declare createHistogram: HasOneCreateAssociationMixin<Image>
 }
 
-export class User extends Model<InferAttributes<User>, InferCreationAttributes<User>> {
-	declare id: string
+export class User extends Model<
+	InferAttributes<User>,
+	InferCreationAttributes<User, { omit: 'role' | 'validContrib' | 'validateToken' }>
+> {
+	declare schoolID: string
 	declare name: string
-	declare verified: boolean
 	declare email: string
-	// declare contributions: string[]
+	declare role: 'guest' | 'user' | 'admin'
+	declare validContrib: number
+	declare validateToken: string
+	declare latestContrib: number
 
 	declare contributions: NonAttribute<Image[]>
 	// these will not exist until `Model.init` was called.
@@ -58,10 +70,10 @@ export class User extends Model<InferAttributes<User>, InferCreationAttributes<U
 	declare hasContribution: HasManyHasAssociationMixin<Course, string>
 	declare hasContributions: HasManyHasAssociationsMixin<Course, string>
 	declare countContributions: HasManyCountAssociationsMixin
-	declare createContribution: HasManyCreateAssociationMixin<Course, 'number'>
+	declare createContribution: HasManyCreateAssociationMixin<Course, 'courseNumber'>
 }
 
-export default function initDB(sequelize: Sequelize) {
+export default function initColletions(sequelize: Sequelize) {
 	Image.init(
 		{
 			md5: {
@@ -73,47 +85,45 @@ export default function initDB(sequelize: Sequelize) {
 		{ sequelize }
 	)
 
+	// TODO: 操行、體育等可能重複的科目會出錯
 	Course.init(
 		{
-			number: {
+			courseNumber: {
 				type: DataTypes.STRING,
 				primaryKey: true,
 			},
 			classCode: DataTypes.STRING,
-			year: DataTypes.INTEGER,
 			semester: DataTypes.INTEGER,
-			// histogram: {
-			// 	type: DataTypes.STRING,
-			// 	references: {
-			// 		model: Image,
-			// 		key: 'id',
-			// 	},
-			// },
 			teacher: DataTypes.STRING,
 		},
 		{ sequelize }
 	)
-	Course.hasOne(Image)
+	Course.hasOne(Image, {
+		as: 'histogram',
+	})
 
 	User.init(
 		{
-			id: {
+			schoolID: {
 				type: DataTypes.STRING,
 				primaryKey: true,
+				unique: true,
 			},
 			name: DataTypes.STRING,
-			verified: {
-				type: DataTypes.BOOLEAN,
-				defaultValue: false,
-			},
 			email: DataTypes.STRING,
-			// contributions: {
-			// 	type: DataTypes.ARRAY(DataTypes.STRING),
-			// 	references: {
-			// 		model: Course,
-			// 		key: 'number',
-			// 	},
-			// },
+			role: {
+				type: DataTypes.STRING,
+				defaultValue: 'guest',
+			},
+			validContrib: {
+				type: DataTypes.INTEGER,
+				defaultValue: 1,
+			},
+			validateToken: {
+				type: DataTypes.STRING,
+				defaultValue: () => generateToken(6),
+			},
+			latestContrib: DataTypes.INTEGER,
 		},
 		{ sequelize }
 	)
@@ -127,36 +137,3 @@ export default function initDB(sequelize: Sequelize) {
 		Image,
 	}
 }
-
-// ;(async () => {
-// 	const sequelize = new Sequelize('sqlite:/home/simba/git/ncku-course/server/db/database.sqlite')
-// 	const { User, Course, Image } = initDB(sequelize)
-//
-// 	// await sequelize.sync({ force: true })
-//
-// 	// let h = await Image.create({
-// 	// 	md5: '324234234243',
-// 	// 	path: '/image/english',
-// 	// })
-// 	//
-// 	// let english = await Course.create({
-// 	// 	number: 'A1234',
-// 	// 	classCode: '',
-// 	// 	year: 2022,
-// 	// 	semester: 2,
-// 	// 	teacher: JSON.stringify(['some body']),
-// 	// })
-// 	//
-// 	// let simba = await User.create({
-// 	// 	id: 'C24206082',
-// 	// 	name: 'simba',
-// 	// 	verified: true,
-// 	// 	email: 'c24106082@gs.ncku.edu.tw',
-// 	// })
-//
-// 	// await english.setImage(h)
-// 	//
-// 	// await simba.addContribution(english)
-//
-// 	Course.findOne({ include: [Image] }).then(data => console.log(JSON.stringify(data?.dataValues, null, 2)))
-// })()

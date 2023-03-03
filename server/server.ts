@@ -1,3 +1,6 @@
+import dotenv from 'dotenv'
+dotenv.config()
+
 import express from 'express'
 import cookieParser from 'cookie-parser'
 import logger from 'morgan'
@@ -6,7 +9,7 @@ import cors from 'cors'
 import fileUpload from 'express-fileupload'
 
 import indexRouter from './routes/index'
-import './db'
+import initDB from './db'
 
 const app = express()
 
@@ -25,4 +28,4 @@ app.use((_, res) => {
 	res.status(404)
 })
 
-app.listen(3000, () => console.log('listening on http://localhost:3000'))
+initDB().then(() => app.listen(3000, () => console.log('listening on http://localhost:3000')))

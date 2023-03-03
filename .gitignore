@@ -104,3 +104,4 @@ dist
 .tern-port
 *.autosave.xopp
 image
+pocketbase/pb_data
