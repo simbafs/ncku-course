@@ -1,79 +1,10 @@
 import express from 'express'
 import fileUpload from 'express-fileupload'
-import exifr from 'exifr'
 import { User, Course, Image } from '../db/init'
-import path from 'path'
 
 const router = express.Router()
 
-async function saveFile(file: fileUpload.UploadedFile, name: string) {
-	let filepath = path.join(process.cwd(), 'image', name)
-	return file.mv(filepath).then(() =>
-		Image.create({
-			path: filepath,
-			md5: file.md5,
-		})
-	)
-}
-
-type CourseInfo = Pick<Course, 'courseNumber' | 'classCode' | 'semester'>
-function createCourse(courseInfo: CourseInfo) {
-	return async (image: Image) => {
-		let course = Course.buildFromInfo(courseInfo)
-		course.setHistogram(image)
-		return course.save()
-	}
-}
-
-type UserInfo = Pick<ContribInfo, 'schoolID' | 'name' | 'semester'>
-async function updateUser(userInfo: UserInfo, contribution: number) {
-	let user = await User.findOne({
-		where: {
-			schoolID: userInfo.schoolID,
-		},
-	})
-	if (!user) {
-		user = User.build({
-			schoolID: userInfo.schoolID,
-			name: userInfo.name,
-			email: `${userInfo.schoolID}@gs.nkcu.edu.tw`,
-			latestContrib: userInfo.semester,
-		})
-	}
-
-	user.validContrib += contribution
-	if (user.latestContrib < userInfo.semester) user.latestContrib = userInfo.semester
-
-	return user.save()
-}
-
-async function isImageValid(image: fileUpload.UploadedFile) {
-	const invalidImage = '850a0b27b18e17ee7101a5184c59f8cb'
-	const validImageMeta =
-		'{"ImageWidth":460,"ImageHeight":300,"BitDepth":2,"ColorType":"Palette","Compression":"Deflate/Inflate","Filter":"Adaptive","Interlace":"Noninterlaced"}'
-
-	// exclude image that data not found
-	if (image.md5 === invalidImage) {
-		console.log('not found image')
-		return false
-	}
-
-	// Exclude images that may not match metadata
-	if (JSON.stringify(await exifr.parse(image.data)) !== validImageMeta) {
-		console.log('metadata not match')
-		return false
-	}
-
-	// check if image exist
-	if ((await Image.count({ where: { md5: image.md5 } })) > 0) {
-		console.log('dulplicated')
-		return false
-	}
-
-	return true
-}
-
-type ContribInfo = {
+export type ContribInfo = {
 	name: string
 	department: string
 	grade: number
@@ -86,6 +17,7 @@ router.post('/upload', async (req, res) => {
 	const files = JSON.parse(req.body?.files || '[]')
 
 	let contribInfo: ContribInfo = JSON.parse(req.body.info)
+	// TODO: check if all properties is valid
 
 	console.log(contribInfo)
 
@@ -93,7 +25,7 @@ router.post('/upload', async (req, res) => {
 	for await (let file of files) {
 		const image = req.files[file] as fileUpload.UploadedFile
 
-		if (!(await isImageValid(image))) continue
+		if (!(await Image.isValid(image))) continue
 		let [courseNumber, classCode] = file.split('-')
 
 		console.log({
@@ -102,8 +34,8 @@ router.post('/upload', async (req, res) => {
 			semester: contribInfo.semester,
 		})
 
-		await saveFile(image, `${contribInfo.semester}-${courseNumber}-${classCode}.png`).then(
-			createCourse({
+		await Image.saveFile(image, `${contribInfo.semester}-${courseNumber}-${classCode}.png`).then(
+			Course.createCourseWithImage({
 				courseNumber,
 				classCode,
 				semester: contribInfo.semester,
@@ -120,7 +52,7 @@ router.post('/upload', async (req, res) => {
 		contribInfo
 	)
 
-	await updateUser(contribInfo, validContrib)
+	await User.updateUser(contribInfo, validContrib)
 
 	res.json({ error: false, validContrib, invalidContrib })
 })
