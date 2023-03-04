@@ -9,6 +9,9 @@ import cors from 'cors'
 import fileUpload from 'express-fileupload'
 
 import indexRouter from './routes/index'
+import apiRouter from './routes/api'
+import authRouter from './routes/auth'
+
 import initDB from './db'
 
 const app = express()
@@ -19,10 +22,10 @@ app.use(logger('dev'))
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 app.use(cookieParser())
-// auth for user's contribution
-app.use('/image', express.static(path.join(__dirname, 'image')))
 
 app.use(indexRouter)
+app.use('/api', apiRouter)
+app.use('/auth', authRouter)
 
 app.use((_, res) => {
 	res.status(404)

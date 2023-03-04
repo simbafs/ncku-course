@@ -16,7 +16,7 @@ export default class Course extends Model<InferAttributes<Course>, InferCreation
 	declare semester: number
 	declare teacher: string // this not support yet, need crawler to get courses data
 
-	declare histogram: NonAttribute<Image[]>
+	declare histogram: NonAttribute<Image>
 	// these will not exist until `Model.init` was called.
 	declare getHistogram: HasOneGetAssociationMixin<Image> // Note the null assertions!
 	declare setHistogram: HasOneSetAssociationMixin<Image, string>

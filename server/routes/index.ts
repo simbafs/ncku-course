@@ -1,6 +1,6 @@
 import express from 'express'
 import fileUpload from 'express-fileupload'
-import { User, Course, Image } from '../db/init'
+import { User, Course, Image } from '../db/models'
 
 const router = express.Router()
 
@@ -19,7 +19,7 @@ router.post('/upload', async (req, res) => {
 	let contribInfo: ContribInfo = JSON.parse(req.body.info)
 	// TODO: check if all properties is valid
 
-	console.log(contribInfo)
+	// console.log(contribInfo)
 
 	let validContrib = 0
 	for await (let file of files) {
@@ -28,11 +28,11 @@ router.post('/upload', async (req, res) => {
 		if (!(await Image.isValid(image))) continue
 		let [courseNumber, classCode] = file.split('-')
 
-		console.log({
-			courseNumber,
-			classCode,
-			semester: contribInfo.semester,
-		})
+		// console.log({
+		// 	courseNumber,
+		// 	classCode,
+		// 	semester: contribInfo.semester,
+		// })
 
 		await Image.saveFile(image, `${contribInfo.semester}-${courseNumber}-${classCode}.png`).then(
 			Course.createCourseWithImage({
@@ -45,23 +45,9 @@ router.post('/upload', async (req, res) => {
 	}
 	let invalidContrib = files.length - validContrib
 
-	console.log(
-		{
-			schoolID: contribInfo.schoolID,
-		},
-		contribInfo
-	)
-
 	await User.updateUser(contribInfo, validContrib)
 
 	res.json({ error: false, validContrib, invalidContrib })
-})
-
-router.get('/all', async (req, res) => {
-	let user = await User.findAll()
-	let course = await Course.findAll()
-	let image = await Image.findAll()
-	return res.json({ user, course, image })
 })
 
 router.get('/', async function (req, res) {

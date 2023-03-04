@@ -105,3 +105,4 @@ dist
 *.autosave.xopp
 image
 pocketbase/pb_data
+server/database.sqlite

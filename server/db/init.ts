@@ -2,16 +2,7 @@ import { Sequelize, DataTypes } from 'sequelize'
 import { User, Course, Image } from './models'
 export { User, Course, Image }
 
-function generateToken(len = 6) {
-	let char = '0123456789'.split('')
-	let token = ''
-	for (let i = 0; i < len; i++) {
-		token += char[Math.floor(Math.random() * char.length)]
-	}
-	return token
-}
-
-export default function initColletions(sequelize: Sequelize) {
+export default function initModels(sequelize: Sequelize) {
 	Image.init(
 		{
 			md5: {
@@ -37,9 +28,6 @@ export default function initColletions(sequelize: Sequelize) {
 		},
 		{ sequelize }
 	)
-	Course.hasOne(Image, {
-		as: 'histogram',
-	})
 
 	User.init(
 		{
@@ -58,17 +46,13 @@ export default function initColletions(sequelize: Sequelize) {
 				type: DataTypes.INTEGER,
 				defaultValue: 1,
 			},
-			validateToken: {
-				type: DataTypes.STRING,
-				defaultValue: () => generateToken(6),
-			},
 			latestContrib: DataTypes.INTEGER,
 		},
 		{ sequelize }
 	)
-	User.hasMany(Course, {
-		as: 'contribution',
-	})
+	// Course <-> Image, one-to-one
+	Course.hasOne(Image, { as: 'histogram' })
+	Image.belongsTo(Course, { foreignKey: 'histogramId' })
 
 	return {
 		User,
