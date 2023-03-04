@@ -23,12 +23,32 @@ app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 app.use(cookieParser())
 
+app.use((req, res, next) => {
+	res.data = function (data: any) {
+		return res.json({
+			error: false,
+			message: undefined,
+			data: data,
+		})
+	}
+
+	res.error = function (err: string) {
+		return res.status(400).json({
+			error: true,
+			message: err,
+			data: undefined,
+		})
+	}
+
+	next()
+})
+
 app.use(indexRouter)
 app.use('/api', apiRouter)
 app.use('/auth', authRouter)
 
-app.use((_, res) => {
-	res.status(404)
-})
+// app.use((_, res) => {
+// 	res.status(404)
+// })
 
 initDB().then(() => app.listen(3000, () => console.log('listening on http://localhost:3000')))

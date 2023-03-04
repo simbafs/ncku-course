@@ -1,11 +1,7 @@
 import fileUpload from 'express-fileupload'
 import exifr from 'exifr'
 import path from 'path'
-import {
-	Model,
-	InferAttributes,
-	InferCreationAttributes,
-} from 'sequelize'
+import { Model, InferAttributes, InferCreationAttributes } from 'sequelize'
 
 export default class Image extends Model<InferAttributes<Image>, InferCreationAttributes<Image>> {
 	declare path: string

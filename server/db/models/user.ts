@@ -1,8 +1,4 @@
-import {
-	Model,
-	InferAttributes,
-	InferCreationAttributes,
-} from 'sequelize'
+import { Model, InferAttributes, InferCreationAttributes } from 'sequelize'
 import { ContribInfo } from '../../routes'
 
 export default class User extends Model<

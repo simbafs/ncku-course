@@ -3,7 +3,7 @@ import { User, Course, Image } from '../db/models'
 
 const router = express.Router()
 
-router.get('/course', async (req, res, next) => {
+router.get('/course', async (req, res) => {
 	// TODO remove `as`
 	let courseNumber = req.query.courseNumber as string
 	let classCode = req.query.classCode as string
@@ -19,43 +19,22 @@ router.get('/course', async (req, res, next) => {
 	let courses = await Course.findAll({
 		where: query,
 	})
-	res.locals.data = courses.map(course => course.id)
-	next()
+	return res.data(courses.map(course => course.id))
 })
 
-router.get('/course/:id', async (req, res, next) => {
+router.get('/course/:id', async (req, res) => {
 	let id = req.params.id
 	let course = await Course.findByPk(id, { include: ['histogram'] })
 	let filepath = course?.histogram.path
 	if (filepath) return res.sendFile(filepath)
-	else {
-		res.locals.error = 'course histogram not found'
-		return next()
-	}
+	else return res.error('course histogram not found')
 })
 
-router.get('/all', async (req, res, next) => {
+router.get('/all', async (req, res) => {
 	let user = await User.findAll()
 	let course = await Course.findAll()
 	let image = await Image.findAll()
-	res.locals.data = { user, course, image }
-	return next()
-})
-
-router.use((req, res) => {
-	if (res.locals.err)
-		return res.status(400).json({
-			error: true,
-			message: res.locals.err,
-		})
-
-	if (res.locals.data) return res.json(res.locals.data)
-
-	return res.json({
-		params: req.params,
-		query: req.query,
-		body: req.body,
-	})
+	return res.data({ user, course, image })
 })
 
 export default router
